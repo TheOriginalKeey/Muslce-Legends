@@ -1,4 +1,4 @@
-local SCRIPT_CATALOG = {
+local BUILTIN_SCRIPTS = {
     {
         name = "DxD (Farm)",
         url = "https://codeberg.org/vdvedvegbgeb/vdvedvegbgeb/raw/branch/main/DxD.lua",
@@ -17,6 +17,15 @@ local SCRIPT_CATALOG = {
     },
 }
 
+local SCRIPT_CATALOG = {}
+for _, entry in ipairs(BUILTIN_SCRIPTS) do
+    table.insert(SCRIPT_CATALOG, {
+        name = entry.name,
+        url = entry.url,
+        builtin = true,
+    })
+end
+
 local function make(parent, className, props)
     local obj = Instance.new(className)
     for key, value in pairs(props) do
@@ -26,6 +35,10 @@ local function make(parent, className, props)
     return obj
 end
 
+local function trim(value)
+    return (value or ""):gsub("^%s+", ""):gsub("%s+$", "")
+end
+
 local function getUiParent()
     if type(gethui) == "function" then
         return gethui()
@@ -33,11 +46,28 @@ local function getUiParent()
     return game:GetService("CoreGui")
 end
 
+local function friendlyRuntimeMessage(entryName, errText)
+    local lowerErr = string.lower(errText)
+
+    if entryName == "KxK (Fight)" and string.find(lowerErr, "parent property of localscript is locked", 1, true) then
+        return "KxK failed: this KxK build is trying to parent a locked LocalScript (imgui)."
+    end
+
+    if entryName == "DxD (Farm)" and string.find(lowerErr, "attempt to index nil", 1, true) then
+        return "DxD failed: script expected objects that do not exist in this server/game state."
+    end
+
+    return "Runtime error in " .. entryName .. ": " .. errText
+end
+
 local uiParent = getUiParent()
 local existing = uiParent:FindFirstChild("KeeyUniversalLoader")
 if existing then
     existing:Destroy()
 end
+
+local OPEN_SIZE = Vector2.new(360, 340)
+local COLLAPSED_SIZE = Vector2.new(360, 52)
 
 local screenGui = make(uiParent, "ScreenGui", {
     Name = "KeeyUniversalLoader",
@@ -49,45 +79,67 @@ local screenGui = make(uiParent, "ScreenGui", {
 local main = make(screenGui, "Frame", {
     Name = "Main",
     AnchorPoint = Vector2.new(0.5, 0.5),
-    Position = UDim2.fromScale(0.5, 0.5),
-    Size = UDim2.fromOffset(440, 520),
-    BackgroundColor3 = Color3.fromRGB(23, 24, 30),
+    Position = UDim2.fromScale(0.5, 0.52),
+    Size = UDim2.fromOffset(OPEN_SIZE.X, OPEN_SIZE.Y),
+    BackgroundColor3 = Color3.fromRGB(16, 14, 22),
     BorderSizePixel = 0,
 })
-
-make(main, "UICorner", { CornerRadius = UDim.new(0, 12) })
+make(main, "UICorner", { CornerRadius = UDim.new(0, 11) })
 make(main, "UIStroke", {
-    Color = Color3.fromRGB(108, 178, 255),
+    Color = Color3.fromRGB(129, 82, 255),
     Thickness = 1.2,
-    ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 })
 
 local topBar = make(main, "Frame", {
     Name = "TopBar",
-    Size = UDim2.new(1, 0, 0, 46),
-    BackgroundColor3 = Color3.fromRGB(31, 33, 40),
+    Size = UDim2.new(1, 0, 0, 52),
+    BackgroundColor3 = Color3.fromRGB(30, 10, 50),
     BorderSizePixel = 0,
 })
-
-make(topBar, "UICorner", { CornerRadius = UDim.new(0, 12) })
+make(topBar, "UICorner", { CornerRadius = UDim.new(0, 11) })
 
 make(topBar, "TextLabel", {
     BackgroundTransparency = 1,
-    Position = UDim2.fromOffset(12, 0),
-    Size = UDim2.new(1, -80, 1, 0),
+    Position = UDim2.fromOffset(12, 4),
+    Size = UDim2.new(1, -110, 0, 24),
     Font = Enum.Font.GothamBold,
-    Text = "Keey Universal Loader",
+    Text = "Keey Loader",
     TextXAlignment = Enum.TextXAlignment.Left,
-    TextSize = 17,
-    TextColor3 = Color3.fromRGB(240, 244, 255),
+    TextSize = 20,
+    TextColor3 = Color3.fromRGB(235, 224, 255),
 })
+
+make(topBar, "TextLabel", {
+    BackgroundTransparency = 1,
+    Position = UDim2.fromOffset(12, 28),
+    Size = UDim2.new(1, -120, 0, 18),
+    Font = Enum.Font.Gotham,
+    Text = "Choose your script to execute",
+    TextXAlignment = Enum.TextXAlignment.Left,
+    TextSize = 11,
+    TextColor3 = Color3.fromRGB(183, 163, 230),
+})
+
+local collapseBtn = make(topBar, "TextButton", {
+    Name = "Collapse",
+    AnchorPoint = Vector2.new(1, 0.5),
+    Position = UDim2.new(1, -48, 0.5, 0),
+    Size = UDim2.fromOffset(26, 26),
+    BackgroundColor3 = Color3.fromRGB(49, 22, 75),
+    BorderSizePixel = 0,
+    Font = Enum.Font.GothamBold,
+    Text = "^",
+    TextSize = 15,
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+})
+make(collapseBtn, "UICorner", { CornerRadius = UDim.new(0, 8) })
 
 local closeBtn = make(topBar, "TextButton", {
     Name = "Close",
     AnchorPoint = Vector2.new(1, 0.5),
-    Position = UDim2.new(1, -10, 0.5, 0),
-    Size = UDim2.fromOffset(28, 28),
-    BackgroundColor3 = Color3.fromRGB(64, 68, 82),
+    Position = UDim2.new(1, -14, 0.5, 0),
+    Size = UDim2.fromOffset(26, 26),
+    BackgroundColor3 = Color3.fromRGB(76, 27, 60),
     BorderSizePixel = 0,
     Font = Enum.Font.GothamBold,
     Text = "X",
@@ -101,89 +153,71 @@ local reopenBtn = make(screenGui, "TextButton", {
     Visible = false,
     AnchorPoint = Vector2.new(0, 1),
     Position = UDim2.new(0, 12, 1, -12),
-    Size = UDim2.fromOffset(110, 34),
-    BackgroundColor3 = Color3.fromRGB(38, 40, 48),
+    Size = UDim2.fromOffset(124, 34),
+    BackgroundColor3 = Color3.fromRGB(27, 20, 38),
     BorderSizePixel = 0,
     Font = Enum.Font.GothamBold,
     Text = "Open Loader",
-    TextSize = 13,
-    TextColor3 = Color3.fromRGB(240, 244, 255),
+    TextSize = 12,
+    TextColor3 = Color3.fromRGB(244, 236, 255),
 })
 make(reopenBtn, "UICorner", { CornerRadius = UDim.new(0, 10) })
 make(reopenBtn, "UIStroke", {
-    Color = Color3.fromRGB(108, 178, 255),
+    Color = Color3.fromRGB(129, 82, 255),
     Thickness = 1,
 })
 
-local content = make(main, "ScrollingFrame", {
-    Name = "Content",
-    Position = UDim2.fromOffset(0, 46),
-    Size = UDim2.new(1, 0, 1, -46),
+local body = make(main, "ScrollingFrame", {
+    Name = "Body",
+    Position = UDim2.fromOffset(0, 52),
+    Size = UDim2.new(1, 0, 1, -52),
     BackgroundTransparency = 1,
     BorderSizePixel = 0,
     ScrollBarThickness = 6,
     CanvasSize = UDim2.fromOffset(0, 0),
-    AutomaticCanvasSize = Enum.AutomaticSize.None,
     ScrollingDirection = Enum.ScrollingDirection.Y,
 })
 
-local contentPadding = make(content, "UIPadding", {
-    PaddingTop = UDim.new(0, 14),
-    PaddingBottom = UDim.new(0, 14),
-    PaddingLeft = UDim.new(0, 12),
-    PaddingRight = UDim.new(0, 12),
-})
-
-local contentLayout = make(content, "UIListLayout", {
-    FillDirection = Enum.FillDirection.Vertical,
-    SortOrder = Enum.SortOrder.LayoutOrder,
-    Padding = UDim.new(0, 10),
-})
-
-make(content, "TextLabel", {
-    LayoutOrder = 1,
-    Size = UDim2.new(1, 0, 0, 36),
-    BackgroundTransparency = 1,
-    Font = Enum.Font.Gotham,
-    Text = "Choose a script from the dropdown, then click Run Selected Script.",
-    TextWrapped = true,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    TextYAlignment = Enum.TextYAlignment.Top,
-    TextSize = 13,
-    TextColor3 = Color3.fromRGB(178, 186, 210),
-})
-
-local dropdownWrapper = make(content, "Frame", {
-    Name = "DropdownWrapper",
-    LayoutOrder = 2,
-    Size = UDim2.new(1, 0, 0, 42),
-    BackgroundTransparency = 1,
-})
-
-local dropdownButton = make(dropdownWrapper, "TextButton", {
-    Name = "DropdownButton",
-    Size = UDim2.new(1, 0, 0, 42),
-    BackgroundColor3 = Color3.fromRGB(39, 42, 52),
-    BorderSizePixel = 0,
-    Font = Enum.Font.Gotham,
-    Text = "Select Script",
-    TextXAlignment = Enum.TextXAlignment.Left,
-    TextSize = 14,
-    TextColor3 = Color3.fromRGB(241, 245, 255),
-})
-make(dropdownButton, "UICorner", { CornerRadius = UDim.new(0, 8) })
-
-local dropdownPad = make(dropdownButton, "UIPadding", {
+make(body, "UIPadding", {
+    PaddingTop = UDim.new(0, 10),
+    PaddingBottom = UDim.new(0, 10),
     PaddingLeft = UDim.new(0, 10),
     PaddingRight = UDim.new(0, 10),
 })
 
+local bodyLayout = make(body, "UIListLayout", {
+    FillDirection = Enum.FillDirection.Vertical,
+    SortOrder = Enum.SortOrder.LayoutOrder,
+    Padding = UDim.new(0, 8),
+})
+
+local dropdownWrapper = make(body, "Frame", {
+    Name = "DropdownWrapper",
+    LayoutOrder = 1,
+    Size = UDim2.new(1, 0, 0, 40),
+    BackgroundTransparency = 1,
+})
+
+local dropdownBtn = make(dropdownWrapper, "TextButton", {
+    Name = "DropdownButton",
+    Size = UDim2.new(1, 0, 0, 40),
+    BackgroundColor3 = Color3.fromRGB(39, 25, 57),
+    BorderSizePixel = 0,
+    Font = Enum.Font.Gotham,
+    Text = "Select Script  v",
+    TextXAlignment = Enum.TextXAlignment.Left,
+    TextSize = 13,
+    TextColor3 = Color3.fromRGB(245, 241, 255),
+})
+make(dropdownBtn, "UICorner", { CornerRadius = UDim.new(0, 8) })
+make(dropdownBtn, "UIPadding", { PaddingLeft = UDim.new(0, 10) })
+
 local dropdownList = make(dropdownWrapper, "ScrollingFrame", {
     Name = "DropdownList",
     Visible = false,
-    Position = UDim2.fromOffset(0, 46),
+    Position = UDim2.fromOffset(0, 44),
     Size = UDim2.new(1, 0, 0, 0),
-    BackgroundColor3 = Color3.fromRGB(32, 35, 43),
+    BackgroundColor3 = Color3.fromRGB(28, 22, 38),
     BorderSizePixel = 0,
     ScrollBarThickness = 5,
     CanvasSize = UDim2.fromOffset(0, 0),
@@ -202,119 +236,160 @@ local dropdownLayout = make(dropdownList, "UIListLayout", {
     Padding = UDim.new(0, 4),
 })
 
-local statusLabel = make(content, "TextLabel", {
-    LayoutOrder = 3,
-    Size = UDim2.new(1, 0, 0, 60),
-    BackgroundColor3 = Color3.fromRGB(34, 36, 44),
-    BorderSizePixel = 0,
-    Font = Enum.Font.Gotham,
-    Text = "Status: Ready",
-    TextXAlignment = Enum.TextXAlignment.Left,
-    TextWrapped = true,
-    TextSize = 13,
-    TextColor3 = Color3.fromRGB(161, 227, 188),
-})
-make(statusLabel, "UICorner", { CornerRadius = UDim.new(0, 8) })
-make(statusLabel, "UIPadding", {
-    PaddingLeft = UDim.new(0, 10),
-    PaddingRight = UDim.new(0, 10),
-})
-
-local runButton = make(content, "TextButton", {
-    LayoutOrder = 4,
-    Size = UDim2.new(1, 0, 0, 42),
-    BackgroundColor3 = Color3.fromRGB(70, 126, 210),
+local runSelectedBtn = make(body, "TextButton", {
+    LayoutOrder = 2,
+    Size = UDim2.new(1, 0, 0, 40),
+    BackgroundColor3 = Color3.fromRGB(100, 59, 180),
     BorderSizePixel = 0,
     Font = Enum.Font.GothamBold,
     Text = "Run Selected Script",
-    TextSize = 14,
+    TextSize = 13,
     TextColor3 = Color3.fromRGB(255, 255, 255),
 })
-make(runButton, "UICorner", { CornerRadius = UDim.new(0, 8) })
+make(runSelectedBtn, "UICorner", { CornerRadius = UDim.new(0, 8) })
 
-make(content, "TextLabel", {
-    LayoutOrder = 5,
-    Size = UDim2.new(1, 0, 0, 20),
-    BackgroundTransparency = 1,
-    Font = Enum.Font.Gotham,
-    Text = "Add a custom script so it appears in the dropdown:",
-    TextXAlignment = Enum.TextXAlignment.Left,
-    TextSize = 12,
-    TextColor3 = Color3.fromRGB(178, 186, 210),
-})
-
-local nameBox = make(content, "TextBox", {
-    LayoutOrder = 6,
-    Size = UDim2.new(1, 0, 0, 38),
-    BackgroundColor3 = Color3.fromRGB(39, 42, 52),
+local statusLabel = make(body, "TextLabel", {
+    LayoutOrder = 3,
+    Size = UDim2.new(1, 0, 0, 64),
+    BackgroundColor3 = Color3.fromRGB(23, 19, 30),
     BorderSizePixel = 0,
-    PlaceholderText = "Script Name (example: Boss Farm)",
     Font = Enum.Font.Gotham,
-    Text = "",
-    TextSize = 13,
-    TextColor3 = Color3.fromRGB(236, 241, 255),
-    PlaceholderColor3 = Color3.fromRGB(144, 151, 172),
-    ClearTextOnFocus = false,
-})
-make(nameBox, "UICorner", { CornerRadius = UDim.new(0, 8) })
-make(nameBox, "UIPadding", { PaddingLeft = UDim.new(0, 10) })
-
-local urlBox = make(content, "TextBox", {
-    LayoutOrder = 7,
-    Size = UDim2.new(1, 0, 0, 38),
-    BackgroundColor3 = Color3.fromRGB(39, 42, 52),
-    BorderSizePixel = 0,
-    PlaceholderText = "Script URL (https://...)",
-    Font = Enum.Font.Gotham,
-    Text = "",
-    TextSize = 13,
-    TextColor3 = Color3.fromRGB(236, 241, 255),
-    PlaceholderColor3 = Color3.fromRGB(144, 151, 172),
-    ClearTextOnFocus = false,
-})
-make(urlBox, "UICorner", { CornerRadius = UDim.new(0, 8) })
-make(urlBox, "UIPadding", { PaddingLeft = UDim.new(0, 10) })
-
-local addButton = make(content, "TextButton", {
-    LayoutOrder = 8,
-    Size = UDim2.new(1, 0, 0, 40),
-    BackgroundColor3 = Color3.fromRGB(52, 56, 68),
-    BorderSizePixel = 0,
-    Font = Enum.Font.GothamBold,
-    Text = "Add Script To Dropdown",
-    TextSize = 13,
-    TextColor3 = Color3.fromRGB(240, 244, 255),
-})
-make(addButton, "UICorner", { CornerRadius = UDim.new(0, 8) })
-
-make(content, "TextLabel", {
-    LayoutOrder = 9,
-    Size = UDim2.new(1, 0, 0, 42),
-    BackgroundTransparency = 1,
-    Font = Enum.Font.Gotham,
-    Text = "Tip: You can close the loader with X and reopen it with the Open Loader button.",
+    Text = "Status: Ready",
     TextWrapped = true,
     TextXAlignment = Enum.TextXAlignment.Left,
     TextYAlignment = Enum.TextYAlignment.Top,
     TextSize = 12,
-    TextColor3 = Color3.fromRGB(161, 167, 185),
+    TextColor3 = Color3.fromRGB(174, 243, 186),
+})
+make(statusLabel, "UICorner", { CornerRadius = UDim.new(0, 8) })
+make(statusLabel, "UIPadding", {
+    PaddingTop = UDim.new(0, 8),
+    PaddingBottom = UDim.new(0, 8),
+    PaddingLeft = UDim.new(0, 10),
+    PaddingRight = UDim.new(0, 10),
+})
+
+make(body, "TextLabel", {
+    LayoutOrder = 4,
+    Size = UDim2.new(1, 0, 0, 18),
+    BackgroundTransparency = 1,
+    Font = Enum.Font.Gotham,
+    Text = "Quick launch (4 built-in scripts)",
+    TextXAlignment = Enum.TextXAlignment.Left,
+    TextSize = 11,
+    TextColor3 = Color3.fromRGB(195, 173, 238),
+})
+
+local quickList = make(body, "ScrollingFrame", {
+    Name = "QuickList",
+    LayoutOrder = 5,
+    Size = UDim2.new(1, 0, 0, 110),
+    BackgroundColor3 = Color3.fromRGB(25, 20, 35),
+    BorderSizePixel = 0,
+    ScrollBarThickness = 5,
+    CanvasSize = UDim2.fromOffset(0, 0),
+})
+make(quickList, "UICorner", { CornerRadius = UDim.new(0, 8) })
+make(quickList, "UIPadding", {
+    PaddingTop = UDim.new(0, 5),
+    PaddingBottom = UDim.new(0, 5),
+    PaddingLeft = UDim.new(0, 5),
+    PaddingRight = UDim.new(0, 5),
+})
+
+local quickLayout = make(quickList, "UIListLayout", {
+    FillDirection = Enum.FillDirection.Vertical,
+    SortOrder = Enum.SortOrder.LayoutOrder,
+    Padding = UDim.new(0, 4),
+})
+
+make(body, "TextLabel", {
+    LayoutOrder = 6,
+    Size = UDim2.new(1, 0, 0, 18),
+    BackgroundTransparency = 1,
+    Font = Enum.Font.Gotham,
+    Text = "Add custom script",
+    TextXAlignment = Enum.TextXAlignment.Left,
+    TextSize = 11,
+    TextColor3 = Color3.fromRGB(195, 173, 238),
+})
+
+local nameBox = make(body, "TextBox", {
+    LayoutOrder = 7,
+    Size = UDim2.new(1, 0, 0, 36),
+    BackgroundColor3 = Color3.fromRGB(36, 28, 52),
+    BorderSizePixel = 0,
+    PlaceholderText = "Script Name",
+    ClearTextOnFocus = false,
+    Font = Enum.Font.Gotham,
+    Text = "",
+    TextSize = 12,
+    TextColor3 = Color3.fromRGB(241, 236, 255),
+    PlaceholderColor3 = Color3.fromRGB(160, 149, 187),
+})
+make(nameBox, "UICorner", { CornerRadius = UDim.new(0, 8) })
+make(nameBox, "UIPadding", { PaddingLeft = UDim.new(0, 10) })
+
+local urlBox = make(body, "TextBox", {
+    LayoutOrder = 8,
+    Size = UDim2.new(1, 0, 0, 36),
+    BackgroundColor3 = Color3.fromRGB(36, 28, 52),
+    BorderSizePixel = 0,
+    PlaceholderText = "Script URL (https://...)",
+    ClearTextOnFocus = false,
+    Font = Enum.Font.Gotham,
+    Text = "",
+    TextSize = 12,
+    TextColor3 = Color3.fromRGB(241, 236, 255),
+    PlaceholderColor3 = Color3.fromRGB(160, 149, 187),
+})
+make(urlBox, "UICorner", { CornerRadius = UDim.new(0, 8) })
+make(urlBox, "UIPadding", { PaddingLeft = UDim.new(0, 10) })
+
+local addBtn = make(body, "TextButton", {
+    LayoutOrder = 9,
+    Size = UDim2.new(1, 0, 0, 36),
+    BackgroundColor3 = Color3.fromRGB(54, 34, 84),
+    BorderSizePixel = 0,
+    Font = Enum.Font.GothamBold,
+    Text = "Add Script To Loader",
+    TextSize = 12,
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+})
+make(addBtn, "UICorner", { CornerRadius = UDim.new(0, 8) })
+
+make(body, "TextLabel", {
+    LayoutOrder = 10,
+    Size = UDim2.new(1, 0, 0, 36),
+    BackgroundTransparency = 1,
+    Font = Enum.Font.Gotham,
+    Text = "Tip: Use ^ to collapse (dropup) and v to expand (dropdown).",
+    TextWrapped = true,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    TextYAlignment = Enum.TextYAlignment.Top,
+    TextSize = 11,
+    TextColor3 = Color3.fromRGB(155, 147, 175),
 })
 
 local selectedIndex = 1
+local isCollapsed = false
 local isDropdownOpen = false
-local isRunning = false
 
-local function setStatus(text, isError)
-    statusLabel.Text = "Status: " .. text
-    statusLabel.TextColor3 = isError and Color3.fromRGB(255, 141, 141) or Color3.fromRGB(161, 227, 188)
+local function setStatus(message, isError)
+    statusLabel.Text = "Status: " .. message
+    statusLabel.TextColor3 = isError and Color3.fromRGB(255, 138, 138) or Color3.fromRGB(174, 243, 186)
 end
 
-local function updateContentCanvas()
-    content.CanvasSize = UDim2.fromOffset(0, contentLayout.AbsoluteContentSize.Y + 24)
+local function updateBodyCanvas()
+    body.CanvasSize = UDim2.fromOffset(0, bodyLayout.AbsoluteContentSize.Y + 18)
 end
 
 local function updateDropdownCanvas()
     dropdownList.CanvasSize = UDim2.fromOffset(0, dropdownLayout.AbsoluteContentSize.Y + 8)
+end
+
+local function updateQuickCanvas()
+    quickList.CanvasSize = UDim2.fromOffset(0, quickLayout.AbsoluteContentSize.Y + 8)
 end
 
 local function setDropdownOpen(open)
@@ -322,24 +397,88 @@ local function setDropdownOpen(open)
     dropdownList.Visible = open
 
     if open then
-        local targetHeight = math.min(170, (#SCRIPT_CATALOG * 30) + 8)
+        local targetHeight = math.min(130, (#SCRIPT_CATALOG * 28) + 8)
         dropdownList.Size = UDim2.new(1, 0, 0, targetHeight)
-        dropdownWrapper.Size = UDim2.new(1, 0, 0, 46 + targetHeight)
+        dropdownWrapper.Size = UDim2.new(1, 0, 0, 44 + targetHeight)
     else
         dropdownList.Size = UDim2.new(1, 0, 0, 0)
-        dropdownWrapper.Size = UDim2.new(1, 0, 0, 42)
+        dropdownWrapper.Size = UDim2.new(1, 0, 0, 40)
     end
 
-    updateContentCanvas()
+    updateBodyCanvas()
+end
+
+local function setCollapsed(collapsed)
+    isCollapsed = collapsed
+    body.Visible = not collapsed
+
+    if collapsed then
+        main.Size = UDim2.fromOffset(COLLAPSED_SIZE.X, COLLAPSED_SIZE.Y)
+        collapseBtn.Text = "v"
+        setDropdownOpen(false)
+    else
+        main.Size = UDim2.fromOffset(OPEN_SIZE.X, OPEN_SIZE.Y)
+        collapseBtn.Text = "^"
+        updateBodyCanvas()
+    end
 end
 
 local function updateDropdownButtonText()
-    local current = SCRIPT_CATALOG[selectedIndex]
-    if current then
-        dropdownButton.Text = current.name .. "  v"
+    local selected = SCRIPT_CATALOG[selectedIndex]
+    if selected then
+        dropdownBtn.Text = selected.name .. "  v"
     else
-        dropdownButton.Text = "Select Script  v"
+        dropdownBtn.Text = "Select Script  v"
     end
+end
+
+local function runEntry(entry)
+    if not entry or type(entry.url) ~= "string" or entry.url == "" then
+        setStatus("Invalid script entry.", true)
+        return
+    end
+
+    setStatus("Downloading " .. entry.name .. "...", false)
+
+    task.spawn(function()
+        local okDownload, source = pcall(function()
+            return game:HttpGet(entry.url, true)
+        end)
+
+        if (not okDownload) or type(source) ~= "string" or source == "" then
+            if entry.name == "Keey Main" then
+                setStatus("Download failed for Keey Main. Upload keey-main.lua to GitHub main branch.", true)
+            else
+                setStatus("Download failed for " .. entry.name .. ".", true)
+            end
+            warn("[Loader] Download failed for", entry.name)
+            return
+        end
+
+        local chunk, compileErr = loadstring(source)
+        if type(chunk) ~= "function" then
+            setStatus("Compile error in " .. entry.name .. ": " .. tostring(compileErr), true)
+            warn("[Loader] Compile error in", entry.name, compileErr)
+            return
+        end
+
+        setStatus("Executing " .. entry.name .. "...", false)
+
+        task.spawn(function()
+            local okRun, runErr = xpcall(chunk, function(err)
+                return tostring(err)
+            end)
+
+            if okRun then
+                setStatus("Started " .. entry.name .. " successfully.", false)
+                warn("[Loader] Started", entry.name)
+            else
+                local humanMessage = friendlyRuntimeMessage(entry.name, tostring(runErr))
+                setStatus(humanMessage, true)
+                warn("[Loader] Runtime error in", entry.name, runErr)
+            end
+        end)
+    end)
 end
 
 local function refreshDropdownItems()
@@ -349,23 +488,23 @@ local function refreshDropdownItems()
         end
     end
 
-    for index, item in ipairs(SCRIPT_CATALOG) do
-        local itemButton = make(dropdownList, "TextButton", {
-            LayoutOrder = index,
-            Size = UDim2.new(1, 0, 0, 26),
-            BackgroundColor3 = Color3.fromRGB(45, 49, 61),
+    for idx, entry in ipairs(SCRIPT_CATALOG) do
+        local optionBtn = make(dropdownList, "TextButton", {
+            LayoutOrder = idx,
+            Size = UDim2.new(1, 0, 0, 24),
+            BackgroundColor3 = Color3.fromRGB(46, 35, 63),
             BorderSizePixel = 0,
             Font = Enum.Font.Gotham,
-            Text = item.name,
+            Text = entry.name,
             TextXAlignment = Enum.TextXAlignment.Left,
-            TextSize = 13,
-            TextColor3 = Color3.fromRGB(237, 241, 255),
+            TextSize = 12,
+            TextColor3 = Color3.fromRGB(245, 239, 255),
         })
-        make(itemButton, "UICorner", { CornerRadius = UDim.new(0, 6) })
-        make(itemButton, "UIPadding", { PaddingLeft = UDim.new(0, 8) })
+        make(optionBtn, "UICorner", { CornerRadius = UDim.new(0, 6) })
+        make(optionBtn, "UIPadding", { PaddingLeft = UDim.new(0, 8) })
 
-        itemButton.MouseButton1Click:Connect(function()
-            selectedIndex = index
+        optionBtn.MouseButton1Click:Connect(function()
+            selectedIndex = idx
             updateDropdownButtonText()
             setDropdownOpen(false)
         end)
@@ -374,84 +513,46 @@ local function refreshDropdownItems()
     updateDropdownCanvas()
 end
 
-local function runSelectedScript()
-    if isRunning then
-        setStatus("A script is already running. Please wait.", true)
-        return
+local function refreshQuickButtons()
+    for _, child in ipairs(quickList:GetChildren()) do
+        if child:IsA("TextButton") then
+            child:Destroy()
+        end
     end
 
-    local selected = SCRIPT_CATALOG[selectedIndex]
-    if not selected then
-        setStatus("No script selected.", true)
-        return
-    end
+    for idx, entry in ipairs(SCRIPT_CATALOG) do
+        local quickBtn = make(quickList, "TextButton", {
+            LayoutOrder = idx,
+            Size = UDim2.new(1, 0, 0, 24),
+            BackgroundColor3 = Color3.fromRGB(52, 40, 72),
+            BorderSizePixel = 0,
+            Font = Enum.Font.GothamBold,
+            Text = "Execute " .. entry.name,
+            TextSize = 11,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+        })
+        make(quickBtn, "UICorner", { CornerRadius = UDim.new(0, 6) })
 
-    isRunning = true
-    runButton.Text = "Running..."
-
-    task.spawn(function()
-        setStatus("Downloading " .. selected.name .. "...", false)
-
-        local okDownload, source = pcall(function()
-            return game:HttpGet(selected.url, true)
+        quickBtn.MouseButton1Click:Connect(function()
+            selectedIndex = idx
+            updateDropdownButtonText()
+            runEntry(entry)
         end)
+    end
 
-        if (not okDownload) or type(source) ~= "string" or source == "" then
-            setStatus("Download failed for " .. selected.name, true)
-            warn("[Loader] Download failed for", selected.name)
-            isRunning = false
-            runButton.Text = "Run Selected Script"
-            return
-        end
-
-        local chunk, compileErr = loadstring(source)
-        if type(chunk) ~= "function" then
-            setStatus("Compile error in " .. selected.name .. ": " .. tostring(compileErr), true)
-            warn("[Loader] Compile error in", selected.name, compileErr)
-            isRunning = false
-            runButton.Text = "Run Selected Script"
-            return
-        end
-
-        setStatus("Executing " .. selected.name .. "...", false)
-        local okRun, runErr = pcall(chunk)
-
-        if okRun then
-            setStatus("Loaded " .. selected.name .. " successfully.", false)
-            warn("[Loader] Loaded", selected.name)
-        else
-            setStatus("Runtime error in " .. selected.name .. ": " .. tostring(runErr), true)
-            warn("[Loader] Runtime error in", selected.name, runErr)
-        end
-
-        isRunning = false
-        runButton.Text = "Run Selected Script"
-    end)
+    updateQuickCanvas()
 end
 
-contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateContentCanvas)
-dropdownLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateDropdownCanvas)
-
-closeBtn.MouseButton1Click:Connect(function()
-    main.Visible = false
-    reopenBtn.Visible = true
+runSelectedBtn.MouseButton1Click:Connect(function()
+    runEntry(SCRIPT_CATALOG[selectedIndex])
 end)
 
-reopenBtn.MouseButton1Click:Connect(function()
-    main.Visible = true
-    reopenBtn.Visible = false
-end)
-
-dropdownButton.MouseButton1Click:Connect(function()
-    setDropdownOpen(not isDropdownOpen)
-end)
-
-addButton.MouseButton1Click:Connect(function()
-    local customName = (nameBox.Text or ""):gsub("^%s+", ""):gsub("%s+$", "")
-    local customUrl = (urlBox.Text or ""):gsub("^%s+", ""):gsub("%s+$", "")
+addBtn.MouseButton1Click:Connect(function()
+    local customName = trim(nameBox.Text)
+    local customUrl = trim(urlBox.Text)
 
     if customName == "" or customUrl == "" then
-        setStatus("Enter both a script name and a URL.", true)
+        setStatus("Enter both custom script name and URL.", true)
         return
     end
 
@@ -463,6 +564,7 @@ addButton.MouseButton1Click:Connect(function()
     table.insert(SCRIPT_CATALOG, {
         name = customName,
         url = customUrl,
+        builtin = false,
     })
 
     selectedIndex = #SCRIPT_CATALOG
@@ -470,13 +572,37 @@ addButton.MouseButton1Click:Connect(function()
     urlBox.Text = ""
 
     refreshDropdownItems()
+    refreshQuickButtons()
     updateDropdownButtonText()
-    setStatus("Added " .. customName .. " to dropdown.", false)
+    setStatus("Added " .. customName .. " to loader.", false)
 end)
 
-runButton.MouseButton1Click:Connect(runSelectedScript)
+dropdownBtn.MouseButton1Click:Connect(function()
+    if isCollapsed then
+        setCollapsed(false)
+    end
+    setDropdownOpen(not isDropdownOpen)
+end)
 
--- Drag support for top bar.
+collapseBtn.MouseButton1Click:Connect(function()
+    setCollapsed(not isCollapsed)
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+    main.Visible = false
+    reopenBtn.Visible = true
+end)
+
+reopenBtn.MouseButton1Click:Connect(function()
+    main.Visible = true
+    reopenBtn.Visible = false
+end)
+
+bodyLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateBodyCanvas)
+dropdownLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateDropdownCanvas)
+quickLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateQuickCanvas)
+
+-- Drag loader by the top bar.
 local UserInputService = game:GetService("UserInputService")
 local dragging = false
 local dragStart
@@ -515,7 +641,9 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 refreshDropdownItems()
+refreshQuickButtons()
 updateDropdownButtonText()
 setDropdownOpen(false)
-updateContentCanvas()
+setCollapsed(false)
+updateBodyCanvas()
 setStatus("Ready", false)
