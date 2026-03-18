@@ -53,8 +53,12 @@ local function friendlyRuntimeMessage(entryName, errText)
         return "KxK loaded (UI visible). One internal element hit a lock - this is normal for this KxK build."
     end
 
+    if entryName == "DxD (Farm)" and string.find(lowerErr, "parent property of localscript is locked", 1, true) then
+        return "DxD loaded (UI visible). One internal element hit a lock - this is normal for this DxD build."
+    end
+
     if entryName == "DxD (Farm)" and string.find(lowerErr, "attempt to index nil", 1, true) then
-        return "DxD failed: script expected objects that do not exist in this server/game state."
+        return "DxD failed: script expected objects not present yet. Re-run after fully loading in."
     end
 
     return "Runtime error in " .. entryName .. ": " .. errText
@@ -148,16 +152,14 @@ local closeBtn = make(topBar, "TextButton", {
 })
 make(closeBtn, "UICorner", { CornerRadius = UDim.new(0, 8) })
 
--- Transparent drag handle covers the title area (left of the buttons) so
--- clicks there always register for dragging even though labels are transparent.
-local dragHandle = make(topBar, "TextButton", {
+-- Plain Frame covering the left title area. Frame.InputBegan only fires when
+-- THIS element is clicked, so button clicks in topBar do not trigger drag.
+local dragHandle = make(topBar, "Frame", {
     Name = "DragHandle",
     BackgroundTransparency = 1,
     Position = UDim2.fromOffset(0, 0),
     Size = UDim2.new(1, -108, 1, 0),
-    Text = "",
-    ZIndex = 2,
-    AutoButtonColor = false,
+    ZIndex = 1,
 })
 
 local reopenBtn = make(screenGui, "TextButton", {
@@ -642,38 +644,35 @@ bodyLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateBodyCan
 dropdownLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateDropdownCanvas)
 quickLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateQuickCanvas)
 
--- Drag anywhere on the loader panel. Uses a global hit-test so every pixel of
--- the loader can be grabbed, not just a small handle. Also clamps position so
--- the loader can never be dragged off-screen.
+-- Drag only from the dragHandle area so normal button clicks never start drag.
+-- Position is clamped to keep the loader fully on-screen.
 local UserInputService = game:GetService("UserInputService")
 local dragging = false
 local dragStart = Vector2.new()
 local startPos = UDim2.new()
 
-UserInputService.InputBegan:Connect(function(input)
+dragHandle.InputBegan:Connect(function(input)
     if input.UserInputType ~= Enum.UserInputType.MouseButton1
         and input.UserInputType ~= Enum.UserInputType.Touch then
         return
     end
-    if not main.Visible then return end
-    local mouse = UserInputService:GetMouseLocation()
+    if not main.Visible then
+        return
+    end
+
+    dragging = true
+    dragStart = input.Position
     local ap = main.AbsolutePosition
     local as = main.AbsoluteSize
-    if mouse.X >= ap.X and mouse.X <= ap.X + as.X
-        and mouse.Y >= ap.Y and mouse.Y <= ap.Y + as.Y then
-        dragging = true
-        dragStart = mouse
-        -- Convert current position to pure absolute offset (scale = 0) so the
-        -- clamping maths below work regardless of initial scale-based position.
-        main.Position = UDim2.fromOffset(
-            ap.X + as.X * 0.5,
-            ap.Y + as.Y * 0.5
-        )
-        startPos = main.Position
-    end
+    -- Convert current position to pure absolute offset so clamping math is stable.
+    main.Position = UDim2.fromOffset(
+        ap.X + as.X * 0.5,
+        ap.Y + as.Y * 0.5
+    )
+    startPos = main.Position
 end)
 
-UserInputService.InputEnded:Connect(function(input)
+dragHandle.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1
         or input.UserInputType == Enum.UserInputType.Touch then
         dragging = false
@@ -686,13 +685,12 @@ UserInputService.InputChanged:Connect(function(input)
         and input.UserInputType ~= Enum.UserInputType.Touch then
         return
     end
-    local mouse = UserInputService:GetMouseLocation()
-    local delta = mouse - dragStart
+    local delta = input.Position - dragStart
     local as = main.AbsoluteSize
     local vp = workspace.CurrentCamera.ViewportSize
     local newX = startPos.X.Offset + delta.X
     local newY = startPos.Y.Offset + delta.Y
-    -- Clamp: center X/Y are kept so the frame always stays fully on screen.
+    -- Clamp center so the frame always stays fully on screen.
     newX = math.clamp(newX, as.X * 0.5, vp.X - as.X * 0.5)
     newY = math.clamp(newY, as.Y * 0.5, vp.Y - as.Y * 0.5)
     main.Position = UDim2.fromOffset(newX, newY)
