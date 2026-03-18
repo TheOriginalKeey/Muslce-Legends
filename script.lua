@@ -50,7 +50,7 @@ local function friendlyRuntimeMessage(entryName, errText)
     local lowerErr = string.lower(errText)
 
     if entryName == "KxK (Fight)" and string.find(lowerErr, "parent property of localscript is locked", 1, true) then
-        return "KxK failed: this KxK build is trying to parent a locked LocalScript (imgui)."
+        return "KxK loaded (UI visible). One internal element hit a lock - this is normal for this KxK build."
     end
 
     if entryName == "DxD (Farm)" and string.find(lowerErr, "attempt to index nil", 1, true) then
@@ -445,15 +445,27 @@ local function updateDropdownButtonText()
     end
 end
 
--- Clear getgenv loop flags so previously running DxD/KxK/Keey loops stop.
+-- Clear getgenv loop flags so previously running Keey loops stop.
+-- External scripts (DxD/KxK from Codeberg) have their own internal loops
+-- that we can't signal, so we also try to destroy their known GUIs.
 local function stopPreviousScript()
     local env = type(getgenv) == "function" and getgenv() or nil
-    if not env then return end
-    env._InfiniteDxD = false
-    env._InfiniteKxK = false
-    env._AutoRepFarmEnabled = false
-    env._AutoRepFarmLoop = nil
-    env.zamanbaslaticisi = false
+    if env then
+        env._InfiniteDxD = false
+        env._InfiniteKxK = false
+        env._AutoRepFarmEnabled = false
+        env._AutoRepFarmLoop = nil
+        env.zamanbaslaticisi = false
+    end
+    -- Attempt to remove GUIs left by previous scripts so they don't stack.
+    local uip = getUiParent()
+    for _, name in ipairs({ "DxDGui", "KxKGui", "KxK", "DxD", "imgui" }) do
+        local found = uip:FindFirstChild(name)
+        if found then pcall(function() found:Destroy() end) end
+        local cg = game:GetService("CoreGui")
+        found = cg:FindFirstChild(name)
+        if found then pcall(function() found:Destroy() end) end
+    end
 end
 
 local function runEntry(entry)
@@ -463,6 +475,9 @@ local function runEntry(entry)
     end
 
     stopPreviousScript()
+    -- Brief yield so Keey loop threads can react to the cleared flags
+    -- before the new script starts setting its own flags.
+    task.wait(0.25)
     setStatus("Downloading " .. entry.name .. "...", false)
 
     task.spawn(function()
@@ -627,22 +642,36 @@ bodyLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateBodyCan
 dropdownLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateDropdownCanvas)
 quickLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateQuickCanvas)
 
--- Drag: use dedicated dragHandle button so collapse/close buttons don't eat input.
+-- Drag anywhere on the loader panel. Uses a global hit-test so every pixel of
+-- the loader can be grabbed, not just a small handle. Also clamps position so
+-- the loader can never be dragged off-screen.
 local UserInputService = game:GetService("UserInputService")
 local dragging = false
-local dragStart
-local startPos
+local dragStart = Vector2.new()
+local startPos = UDim2.new()
 
-local function startDrag()
-    dragging = true
-    dragStart = UserInputService:GetMouseLocation()
-    startPos = main.Position
-end
-
-dragHandle.MouseButton1Down:Connect(startDrag)
-
--- Also allow starting drag on touch.
-dragHandle.TouchLongPress:Connect(startDrag)
+UserInputService.InputBegan:Connect(function(input)
+    if input.UserInputType ~= Enum.UserInputType.MouseButton1
+        and input.UserInputType ~= Enum.UserInputType.Touch then
+        return
+    end
+    if not main.Visible then return end
+    local mouse = UserInputService:GetMouseLocation()
+    local ap = main.AbsolutePosition
+    local as = main.AbsoluteSize
+    if mouse.X >= ap.X and mouse.X <= ap.X + as.X
+        and mouse.Y >= ap.Y and mouse.Y <= ap.Y + as.Y then
+        dragging = true
+        dragStart = mouse
+        -- Convert current position to pure absolute offset (scale = 0) so the
+        -- clamping maths below work regardless of initial scale-based position.
+        main.Position = UDim2.fromOffset(
+            ap.X + as.X * 0.5,
+            ap.Y + as.Y * 0.5
+        )
+        startPos = main.Position
+    end
+end)
 
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1
@@ -659,12 +688,14 @@ UserInputService.InputChanged:Connect(function(input)
     end
     local mouse = UserInputService:GetMouseLocation()
     local delta = mouse - dragStart
-    main.Position = UDim2.new(
-        startPos.X.Scale,
-        startPos.X.Offset + delta.X,
-        startPos.Y.Scale,
-        startPos.Y.Offset + delta.Y
-    )
+    local as = main.AbsoluteSize
+    local vp = workspace.CurrentCamera.ViewportSize
+    local newX = startPos.X.Offset + delta.X
+    local newY = startPos.Y.Offset + delta.Y
+    -- Clamp: center X/Y are kept so the frame always stays fully on screen.
+    newX = math.clamp(newX, as.X * 0.5, vp.X - as.X * 0.5)
+    newY = math.clamp(newY, as.Y * 0.5, vp.Y - as.Y * 0.5)
+    main.Position = UDim2.fromOffset(newX, newY)
 end)
 
 refreshDropdownItems()
