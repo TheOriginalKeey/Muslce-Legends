@@ -81,22 +81,22 @@ local main = make(screenGui, "Frame", {
     AnchorPoint = Vector2.new(0.5, 0.5),
     Position = UDim2.fromScale(0.5, 0.52),
     Size = UDim2.fromOffset(OPEN_SIZE.X, OPEN_SIZE.Y),
-    BackgroundColor3 = Color3.fromRGB(16, 14, 22),
+    BackgroundColor3 = Color3.fromRGB(13, 10, 22),
     BorderSizePixel = 0,
 })
-make(main, "UICorner", { CornerRadius = UDim.new(0, 11) })
+make(main, "UICorner", { CornerRadius = UDim.new(0, 12) })
 make(main, "UIStroke", {
-    Color = Color3.fromRGB(129, 82, 255),
-    Thickness = 1.2,
+    Color = Color3.fromRGB(178, 80, 255),
+    Thickness = 1.6,
 })
 
 local topBar = make(main, "Frame", {
     Name = "TopBar",
     Size = UDim2.new(1, 0, 0, 52),
-    BackgroundColor3 = Color3.fromRGB(30, 10, 50),
+    BackgroundColor3 = Color3.fromRGB(58, 12, 100),
     BorderSizePixel = 0,
 })
-make(topBar, "UICorner", { CornerRadius = UDim.new(0, 11) })
+make(topBar, "UICorner", { CornerRadius = UDim.new(0, 12) })
 
 make(topBar, "TextLabel", {
     BackgroundTransparency = 1,
@@ -106,7 +106,7 @@ make(topBar, "TextLabel", {
     Text = "Keey Loader",
     TextXAlignment = Enum.TextXAlignment.Left,
     TextSize = 20,
-    TextColor3 = Color3.fromRGB(235, 224, 255),
+    TextColor3 = Color3.fromRGB(255, 248, 255),
 })
 
 make(topBar, "TextLabel", {
@@ -117,7 +117,7 @@ make(topBar, "TextLabel", {
     Text = "Choose your script to execute",
     TextXAlignment = Enum.TextXAlignment.Left,
     TextSize = 11,
-    TextColor3 = Color3.fromRGB(183, 163, 230),
+    TextColor3 = Color3.fromRGB(218, 188, 255),
 })
 
 local collapseBtn = make(topBar, "TextButton", {
@@ -125,7 +125,7 @@ local collapseBtn = make(topBar, "TextButton", {
     AnchorPoint = Vector2.new(1, 0.5),
     Position = UDim2.new(1, -48, 0.5, 0),
     Size = UDim2.fromOffset(26, 26),
-    BackgroundColor3 = Color3.fromRGB(49, 22, 75),
+    BackgroundColor3 = Color3.fromRGB(98, 35, 158),
     BorderSizePixel = 0,
     Font = Enum.Font.GothamBold,
     Text = "^",
@@ -139,7 +139,7 @@ local closeBtn = make(topBar, "TextButton", {
     AnchorPoint = Vector2.new(1, 0.5),
     Position = UDim2.new(1, -14, 0.5, 0),
     Size = UDim2.fromOffset(26, 26),
-    BackgroundColor3 = Color3.fromRGB(76, 27, 60),
+    BackgroundColor3 = Color3.fromRGB(172, 32, 88),
     BorderSizePixel = 0,
     Font = Enum.Font.GothamBold,
     Text = "X",
@@ -148,13 +148,25 @@ local closeBtn = make(topBar, "TextButton", {
 })
 make(closeBtn, "UICorner", { CornerRadius = UDim.new(0, 8) })
 
+-- Transparent drag handle covers the title area (left of the buttons) so
+-- clicks there always register for dragging even though labels are transparent.
+local dragHandle = make(topBar, "TextButton", {
+    Name = "DragHandle",
+    BackgroundTransparency = 1,
+    Position = UDim2.fromOffset(0, 0),
+    Size = UDim2.new(1, -108, 1, 0),
+    Text = "",
+    ZIndex = 2,
+    AutoButtonColor = false,
+})
+
 local reopenBtn = make(screenGui, "TextButton", {
     Name = "Reopen",
     Visible = false,
     AnchorPoint = Vector2.new(0, 1),
     Position = UDim2.new(0, 12, 1, -12),
     Size = UDim2.fromOffset(124, 34),
-    BackgroundColor3 = Color3.fromRGB(27, 20, 38),
+    BackgroundColor3 = Color3.fromRGB(42, 20, 72),
     BorderSizePixel = 0,
     Font = Enum.Font.GothamBold,
     Text = "Open Loader",
@@ -201,7 +213,7 @@ local dropdownWrapper = make(body, "Frame", {
 local dropdownBtn = make(dropdownWrapper, "TextButton", {
     Name = "DropdownButton",
     Size = UDim2.new(1, 0, 0, 40),
-    BackgroundColor3 = Color3.fromRGB(39, 25, 57),
+    BackgroundColor3 = Color3.fromRGB(55, 30, 88),
     BorderSizePixel = 0,
     Font = Enum.Font.Gotham,
     Text = "Select Script  v",
@@ -217,7 +229,7 @@ local dropdownList = make(dropdownWrapper, "ScrollingFrame", {
     Visible = false,
     Position = UDim2.fromOffset(0, 44),
     Size = UDim2.new(1, 0, 0, 0),
-    BackgroundColor3 = Color3.fromRGB(28, 22, 38),
+    BackgroundColor3 = Color3.fromRGB(32, 20, 52),
     BorderSizePixel = 0,
     ScrollBarThickness = 5,
     CanvasSize = UDim2.fromOffset(0, 0),
@@ -239,7 +251,7 @@ local dropdownLayout = make(dropdownList, "UIListLayout", {
 local runSelectedBtn = make(body, "TextButton", {
     LayoutOrder = 2,
     Size = UDim2.new(1, 0, 0, 40),
-    BackgroundColor3 = Color3.fromRGB(100, 59, 180),
+    BackgroundColor3 = Color3.fromRGB(128, 52, 220),
     BorderSizePixel = 0,
     Font = Enum.Font.GothamBold,
     Text = "Run Selected Script",
@@ -247,11 +259,12 @@ local runSelectedBtn = make(body, "TextButton", {
     TextColor3 = Color3.fromRGB(255, 255, 255),
 })
 make(runSelectedBtn, "UICorner", { CornerRadius = UDim.new(0, 8) })
+make(runSelectedBtn, "UIStroke", { Color = Color3.fromRGB(200, 140, 255), Thickness = 1 })
 
 local statusLabel = make(body, "TextLabel", {
     LayoutOrder = 3,
     Size = UDim2.new(1, 0, 0, 64),
-    BackgroundColor3 = Color3.fromRGB(23, 19, 30),
+    BackgroundColor3 = Color3.fromRGB(20, 14, 34),
     BorderSizePixel = 0,
     Font = Enum.Font.Gotham,
     Text = "Status: Ready",
@@ -284,7 +297,7 @@ local quickList = make(body, "ScrollingFrame", {
     Name = "QuickList",
     LayoutOrder = 5,
     Size = UDim2.new(1, 0, 0, 110),
-    BackgroundColor3 = Color3.fromRGB(25, 20, 35),
+    BackgroundColor3 = Color3.fromRGB(22, 15, 38),
     BorderSizePixel = 0,
     ScrollBarThickness = 5,
     CanvasSize = UDim2.fromOffset(0, 0),
@@ -317,7 +330,7 @@ make(body, "TextLabel", {
 local nameBox = make(body, "TextBox", {
     LayoutOrder = 7,
     Size = UDim2.new(1, 0, 0, 36),
-    BackgroundColor3 = Color3.fromRGB(36, 28, 52),
+    BackgroundColor3 = Color3.fromRGB(42, 28, 66),
     BorderSizePixel = 0,
     PlaceholderText = "Script Name",
     ClearTextOnFocus = false,
@@ -333,7 +346,7 @@ make(nameBox, "UIPadding", { PaddingLeft = UDim.new(0, 10) })
 local urlBox = make(body, "TextBox", {
     LayoutOrder = 8,
     Size = UDim2.new(1, 0, 0, 36),
-    BackgroundColor3 = Color3.fromRGB(36, 28, 52),
+    BackgroundColor3 = Color3.fromRGB(42, 28, 66),
     BorderSizePixel = 0,
     PlaceholderText = "Script URL (https://...)",
     ClearTextOnFocus = false,
@@ -349,7 +362,7 @@ make(urlBox, "UIPadding", { PaddingLeft = UDim.new(0, 10) })
 local addBtn = make(body, "TextButton", {
     LayoutOrder = 9,
     Size = UDim2.new(1, 0, 0, 36),
-    BackgroundColor3 = Color3.fromRGB(54, 34, 84),
+    BackgroundColor3 = Color3.fromRGB(80, 42, 138),
     BorderSizePixel = 0,
     Font = Enum.Font.GothamBold,
     Text = "Add Script To Loader",
@@ -432,12 +445,24 @@ local function updateDropdownButtonText()
     end
 end
 
+-- Clear getgenv loop flags so previously running DxD/KxK/Keey loops stop.
+local function stopPreviousScript()
+    local env = type(getgenv) == "function" and getgenv() or nil
+    if not env then return end
+    env._InfiniteDxD = false
+    env._InfiniteKxK = false
+    env._AutoRepFarmEnabled = false
+    env._AutoRepFarmLoop = nil
+    env.zamanbaslaticisi = false
+end
+
 local function runEntry(entry)
     if not entry or type(entry.url) ~= "string" or entry.url == "" then
         setStatus("Invalid script entry.", true)
         return
     end
 
+    stopPreviousScript()
     setStatus("Downloading " .. entry.name .. "...", false)
 
     task.spawn(function()
@@ -492,7 +517,7 @@ local function refreshDropdownItems()
         local optionBtn = make(dropdownList, "TextButton", {
             LayoutOrder = idx,
             Size = UDim2.new(1, 0, 0, 24),
-            BackgroundColor3 = Color3.fromRGB(46, 35, 63),
+            BackgroundColor3 = Color3.fromRGB(62, 40, 96),
             BorderSizePixel = 0,
             Font = Enum.Font.Gotham,
             Text = entry.name,
@@ -524,12 +549,12 @@ local function refreshQuickButtons()
         local quickBtn = make(quickList, "TextButton", {
             LayoutOrder = idx,
             Size = UDim2.new(1, 0, 0, 24),
-            BackgroundColor3 = Color3.fromRGB(52, 40, 72),
+            BackgroundColor3 = Color3.fromRGB(72, 42, 118),
             BorderSizePixel = 0,
             Font = Enum.Font.GothamBold,
             Text = "Execute " .. entry.name,
             TextSize = 11,
-            TextColor3 = Color3.fromRGB(255, 255, 255),
+            TextColor3 = Color3.fromRGB(255, 248, 255),
         })
         make(quickBtn, "UICorner", { CornerRadius = UDim.new(0, 6) })
 
@@ -602,36 +627,38 @@ bodyLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateBodyCan
 dropdownLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateDropdownCanvas)
 quickLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateQuickCanvas)
 
--- Drag loader by the top bar.
+-- Drag: use dedicated dragHandle button so collapse/close buttons don't eat input.
 local UserInputService = game:GetService("UserInputService")
 local dragging = false
 local dragStart
 local startPos
 
-topBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = main.Position
+local function startDrag()
+    dragging = true
+    dragStart = UserInputService:GetMouseLocation()
+    startPos = main.Position
+end
 
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
+dragHandle.MouseButton1Down:Connect(startDrag)
+
+-- Also allow starting drag on touch.
+dragHandle.TouchLongPress:Connect(startDrag)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
     end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-    if not dragging then
+    if not dragging then return end
+    if input.UserInputType ~= Enum.UserInputType.MouseMovement
+        and input.UserInputType ~= Enum.UserInputType.Touch then
         return
     end
-
-    if input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then
-        return
-    end
-
-    local delta = input.Position - dragStart
+    local mouse = UserInputService:GetMouseLocation()
+    local delta = mouse - dragStart
     main.Position = UDim2.new(
         startPos.X.Scale,
         startPos.X.Offset + delta.X,
