@@ -1,3 +1,62 @@
+local LOADER_KXK_URL = "https://codeberg.org/vdvedvegbgeb/vdvedvegbgeb/raw/branch/main/KxK.lua"
+local LOADER_DXD_URL = "https://codeberg.org/vdvedvegbgeb/vdvedvegbgeb/raw/branch/main/DxD.lua"
+
+local function runLoaderRemote(url, tag)
+    local okDownload, source = pcall(function()
+        return game:HttpGet(url)
+    end)
+
+    if not okDownload or type(source) ~= "string" or source == "" then
+        warn("[" .. tag .. " Loader] Failed to download script.")
+        return false
+    end
+
+    local okRun, errRun = pcall(function()
+        loadstring(source)()
+    end)
+
+    if not okRun then
+        warn("[" .. tag .. " Loader] Runtime error:", errRun)
+        return false
+    end
+
+    warn("[" .. tag .. " Loader] Script loaded.")
+    return true
+end
+
+local modeArg = ...
+
+local function resolveKeeyMode(rawMode)
+    local env = (type(getgenv) == "function" and getgenv()) or nil
+    local mode = rawMode
+
+    if type(mode) ~= "string" then
+        mode = env and (env.KEEY_MODE or env.KeeyMode or env.keeyMode or env.LoaderMode)
+    end
+
+    if type(mode) ~= "string" then
+        return "keey"
+    end
+
+    mode = string.lower(mode)
+    if mode == "dxd" or mode == "xdx" then
+        return "dxd"
+    end
+    if mode == "kxk" then
+        return "kxk"
+    end
+    return "keey"
+end
+
+local selectedKeeyMode = resolveKeeyMode(modeArg)
+if selectedKeeyMode == "dxd" then
+    runLoaderRemote(LOADER_DXD_URL, "DxD")
+    return
+elseif selectedKeeyMode == "kxk" then
+    runLoaderRemote(LOADER_KXK_URL, "KxK")
+    return
+end
+
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
@@ -11,6 +70,72 @@ local window = library:AddWindow("Keey", {
 
 local AutoFarm = window:AddTab("Farm")
 AutoFarm:Show()
+
+local KXK_RAW_URL = "https://codeberg.org/vdvedvegbgeb/vdvedvegbgeb/raw/branch/main/KxK.lua"
+local DXD_RAW_URL = "https://codeberg.org/vdvedvegbgeb/vdvedvegbgeb/raw/branch/main/DxD.lua"
+
+local function loadRemoteScript(url, tag)
+    local downloadOk, source = pcall(function()
+        return game:HttpGet(url)
+    end)
+
+    if not downloadOk or type(source) ~= "string" or source == "" then
+        warn("[" .. tag .. "] Failed to download script.")
+        return false
+    end
+
+    local runOk, runErr = pcall(function()
+        loadstring(source)()
+    end)
+
+    if runOk then
+        warn("[" .. tag .. "] Script loaded.")
+        return true
+    end
+
+    warn("[" .. tag .. "] Runtime error:", runErr)
+    return false
+end
+
+local keeyMain = AutoFarm:AddFolder("Keey/Main")
+local dxdLoopRunning = false
+local kxkLoopRunning = false
+
+keeyMain:AddSwitch("Infinite DxD (Farm)", function(state)
+    getgenv()._InfiniteDxD = state
+    if not state or dxdLoopRunning then return end
+
+    dxdLoopRunning = true
+    task.spawn(function()
+        while getgenv()._InfiniteDxD do
+            loadRemoteScript(DXD_RAW_URL, "DxD")
+            task.wait(30)
+        end
+        dxdLoopRunning = false
+    end)
+end)
+
+keeyMain:AddSwitch("Infinite KxK (Fight)", function(state)
+    getgenv()._InfiniteKxK = state
+    if not state or kxkLoopRunning then return end
+
+    kxkLoopRunning = true
+    task.spawn(function()
+        while getgenv()._InfiniteKxK do
+            loadRemoteScript(KXK_RAW_URL, "KxK")
+            task.wait(30)
+        end
+        kxkLoopRunning = false
+    end)
+end)
+
+keeyMain:AddButton("Load DxD Once", function()
+    loadRemoteScript(DXD_RAW_URL, "DxD")
+end)
+
+keeyMain:AddButton("Load KxK Once", function()
+    loadRemoteScript(KXK_RAW_URL, "KxK")
+end)
 
 
 -- 1ÃƒÂ¯Ã‚Â¸Ã‚ÂÃƒÂ¢Ã†â€™Ã‚Â£ Switch: Strength OP
@@ -165,9 +290,11 @@ end)
 
 
 -- 4ÃƒÂ¯Ã‚Â¸Ã‚ÂÃƒÂ¢Ã†â€™Ã‚Â£ Switch: Anti Lag
-AutoFarm:AddSwitch("Anti Lag", function(State)
+local antiLagLoopActive = false
+AutoFarm:AddSwitch("Anti Lag", function(state)
     local lighting = game:GetService("Lighting")
-    if State then
+    antiLagLoopActive = state
+    if state then
         for _, gui in pairs(LocalPlayer.PlayerGui:GetChildren()) do
             if gui:IsA("ScreenGui") then gui:Destroy() end
         end
@@ -196,7 +323,7 @@ AutoFarm:AddSwitch("Anti Lag", function(State)
         lighting.FogColor = Color3.new(0,0,0)
         lighting.FogEnd = 100
         task.spawn(function()
-            while State do
+            while antiLagLoopActive do
                 task.wait(5)
                 if not lighting:FindFirstChild("DarkSky") then
                     darkSky:Clone().Parent = lighting
@@ -211,7 +338,7 @@ end)
 AutoFarm:AddSwitch("Anti AFK", function(state)
     if state then
         -- ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ ACTIVAR ANTI AFK
-        if getgenv().AntiAfkExecuted and thisoneissocoldww then 
+        if getgenv().AntiAfkExecuted and game.CoreGui:FindFirstChild("thisoneissocoldww") then 
             getgenv().AntiAfkExecuted = false
             getgenv().zamanbaslaticisi = false
             game.CoreGui.thisoneissocoldww:Destroy()
@@ -412,9 +539,10 @@ end)
 
 -- ÃƒÂ°Ã…Â¸Ã¢â‚¬â€œÃ‚Â¼ÃƒÂ¯Ã‚Â¸Ã‚Â Hide All Frames
 AutoFarm:AddSwitch("Hide All Frames", function(bool)
-    local rSto = game:GetService("ReplicatedStorage")
-    for _, obj in pairs(rSto:GetChildren()) do
-        if obj.Name:match("Frame$") then
+    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+    if not playerGui then return end
+    for _, obj in pairs(playerGui:GetDescendants()) do
+        if obj:IsA("GuiObject") then
             obj.Visible = not bool
         end
     end
@@ -422,19 +550,19 @@ end)
 
 
 -- ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â° BotÃƒÆ’Ã‚Â³n: Girar Ruleta
-AutoFarm:AddButton("Auto Spin", function(state)
+AutoFarm:AddSwitch("Auto Spin", function(state)
     _G.AutoSpinWheel = state
-    
-    if state then
-        spawn(function()
-            while _G.AutoSpinWheel and task.wait(0.1) do
-                game:GetService("ReplicatedStorage").rEvents.openFortuneWheelRemote:InvokeServer(
-                    "openFortuneWheel",
-                    game:GetService("ReplicatedStorage").fortuneWheelChances["Fortune Wheel"]
-                )
-            end
-        end)
-    end
+    if not state then return end
+
+    task.spawn(function()
+        while _G.AutoSpinWheel do
+            game:GetService("ReplicatedStorage").rEvents.openFortuneWheelRemote:InvokeServer(
+                "openFortuneWheel",
+                game:GetService("ReplicatedStorage").fortuneWheelChances["Fortune Wheel"]
+            )
+            task.wait(0.1)
+        end
+    end)
 end)
 
 
@@ -465,7 +593,7 @@ AutoFarm:AddButton("Equip Swift Samurai", function()
             for _, pet in pairs(folder:GetChildren()) do
                 if pet.Name == "Swift Samurai" then
                     ReplicatedStorage.rEvents.equipPetEvent:FireServer("equipPet", pet)
-                    equipped = 1
+                    equipped = equipped + 1
                     print("Equipado Swift Samurai #" .. equipped)
 
                     if equipped >= maxEquip then
@@ -1992,7 +2120,7 @@ Killer:AddSwitch("View Player", function(bool)
     end)
 end)
                                                         
-Killer:AddSwitch("AutoHitNoAnim]", function(state)
+Killer:AddSwitch("AutoHitNoAnim", function(state)
 	autoPunchNoAnim = state
 	task.spawn(function()
 		while autoPunchNoAnim do
